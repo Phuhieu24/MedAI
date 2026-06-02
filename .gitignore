@@ -37,6 +37,7 @@ venv.bak/
 backend/chroma_db/
 chroma_db/
 backend/data/*.gml
+backend/data/chroma/
 
 # Node / React
 node_modules/

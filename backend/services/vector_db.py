@@ -40,19 +40,34 @@ class VectorDB:
             print(f"Lỗi tải mô hình đa ngôn ngữ: {e}. Sẽ dùng mặc định.")
             self.embedding_fn = None
             
-        self.collection_name = settings.CHROMA_COLLECTION_NAME
-        self._ensure_collection()
+        self.kb_collection_name = settings.CHROMA_COLLECTION_NAME
+        self.patient_collection_name = settings.CHROMA_COLLECTION_NAME + "_patients"
+        self._ensure_collections()
 
-    def _ensure_collection(self):
-        """Ensure collection exists."""
+    def _ensure_collections(self):
+        """Ensure collections exist."""
+        # KB Collection
         try:
-            self.collection = self.client.get_collection(
-                name=self.collection_name,
+            self.kb_collection = self.client.get_collection(
+                name=self.kb_collection_name,
                 embedding_function=self.embedding_fn
             )
         except Exception:
-            self.collection = self.client.create_collection(
-                name=self.collection_name,
+            self.kb_collection = self.client.create_collection(
+                name=self.kb_collection_name,
+                metadata={"hnsw:space": "cosine"},
+                embedding_function=self.embedding_fn
+            )
+            
+        # Patient Collection
+        try:
+            self.patient_collection = self.client.get_collection(
+                name=self.patient_collection_name,
+                embedding_function=self.embedding_fn
+            )
+        except Exception:
+            self.patient_collection = self.client.create_collection(
+                name=self.patient_collection_name,
                 metadata={"hnsw:space": "cosine"},
                 embedding_function=self.embedding_fn
             )
@@ -67,7 +82,7 @@ class VectorDB:
         }
         
         text = f"{disease_name}. {description}"
-        self.collection.add(
+        self.kb_collection.add(
             ids=[doc_id],
             metadatas=[metadata],
             documents=[text],
@@ -83,7 +98,7 @@ class VectorDB:
         }
         
         text = f"{symptom_name}. {description}"
-        self.collection.add(
+        self.kb_collection.add(
             ids=[doc_id],
             metadatas=[metadata],
             documents=[text],
@@ -91,13 +106,13 @@ class VectorDB:
 
     def build_index(self, db: Session):
         """Build full index from database using batch processing."""
-        # Clear existing collection
+        # Clear existing KB collection ONLY
         try:
-            self.client.delete_collection(name=self.collection_name)
+            self.client.delete_collection(name=self.kb_collection_name)
         except Exception:
             pass
         
-        self._ensure_collection()
+        self._ensure_collections()
         
         # 1. Batch Index Diseases
         diseases = db.query(Disease).filter(Disease.is_active == True).all()
@@ -118,7 +133,7 @@ class VectorDB:
             d_documents.append(f"Bệnh: {disease.name}. Mô tả: {description}. Triệu chứng thường gặp: {symptoms_text}")
             
         if d_ids:
-            self.collection.add(ids=d_ids, metadatas=d_metadatas, documents=d_documents)
+            self.kb_collection.add(ids=d_ids, metadatas=d_metadatas, documents=d_documents)
         
         # 2. Batch Index Symptoms
         symptoms = db.query(Symptom).filter(Symptom.is_active == True).all()
@@ -135,7 +150,7 @@ class VectorDB:
             s_documents.append(f"Triệu chứng: {symptom.name}. Mô tả: {description}")
             
         if s_ids:
-            self.collection.add(ids=s_ids, metadatas=s_metadatas, documents=s_documents)
+            self.kb_collection.add(ids=s_ids, metadatas=s_metadatas, documents=s_documents)
 
     def search_similar(
         self,
@@ -159,7 +174,7 @@ class VectorDB:
             if query_type:
                 where_filter = {"type": query_type}
             
-            results = self.collection.query(
+            results = self.kb_collection.query(
                 query_texts=[query],
                 n_results=n_results,
                 where=where_filter,
@@ -198,17 +213,18 @@ class VectorDB:
         }
         
         # Text document for semantic search
-        text = f"Bệnh nhân {gender.lower()}, {age} tuổi. Có {symptom_count} triệu chứng: {symptoms}. Được chẩn đoán: {disease}."
+        gender_vn = "nam" if gender.strip().lower() == "male" else "nữ" if gender.strip().lower() == "female" else gender.lower()
+        text = f"Bệnh nhân {gender_vn}, {age} tuổi. Có {symptom_count} triệu chứng: {symptoms}. Được chẩn đoán: {disease}."
         
         try:
-            self.collection.add(
+            self.patient_collection.add(
                 ids=[doc_id],
                 metadatas=[metadata],
                 documents=[text],
             )
         except Exception as e:
             # If exists, we update
-            self.collection.update(
+            self.patient_collection.update(
                 ids=[doc_id],
                 metadatas=[metadata],
                 documents=[text],
@@ -233,7 +249,8 @@ class VectorDB:
                 "disease": p['disease'],
                 "symptom_count": p['symptom_count']
             }
-            text = f"Bệnh nhân {p['gender'].lower()}, {p['age']} tuổi. Có {p['symptom_count']} triệu chứng: {p['symptoms']}. Được chẩn đoán: {p['disease']}."
+            gender_vn = "nam" if p['gender'].strip().lower() == "male" else "nữ" if p['gender'].strip().lower() == "female" else p['gender'].lower()
+            text = f"Bệnh nhân {gender_vn}, {p['age']} tuổi. Có {p['symptom_count']} triệu chứng: {p['symptoms']}. Được chẩn đoán: {p['disease']}."
             
             ids.append(doc_id)
             metadatas.append(metadata)
@@ -241,7 +258,7 @@ class VectorDB:
             
         try:
             # Use upsert to handle both insert and update gracefully
-            self.collection.upsert(
+            self.patient_collection.upsert(
                 ids=ids,
                 metadatas=metadatas,
                 documents=documents,
@@ -249,9 +266,9 @@ class VectorDB:
         except AttributeError:
             # Fallback if upsert is not supported in the chromadb version
             try:
-                self.collection.add(ids=ids, metadatas=metadatas, documents=documents)
+                self.patient_collection.add(ids=ids, metadatas=metadatas, documents=documents)
             except Exception:
-                self.collection.update(ids=ids, metadatas=metadatas, documents=documents)
+                self.patient_collection.update(ids=ids, metadatas=metadatas, documents=documents)
 
     def search_similar_patients(
         self,
@@ -279,7 +296,7 @@ class VectorDB:
             else:
                 where_filter = where_conditions[0]
 
-            results = self.collection.query(
+            results = self.patient_collection.query(
                 query_texts=[query_symptoms],
                 n_results=n_results,
                 where=where_filter,
@@ -318,12 +335,12 @@ class VectorDB:
     def get_disease_context(self, disease_id: int, symptom_ids: List[int]) -> str:
         """Get context about a disease and its symptoms for LLM."""
         try:
-            disease_doc = self.collection.get(ids=[f"disease_{disease_id}"])
+            disease_doc = self.kb_collection.get(ids=[f"disease_{disease_id}"])
             disease_text = disease_doc["documents"][0] if disease_doc["documents"] else ""
             
             symptom_texts = []
             for sid in symptom_ids:
-                symptom_doc = self.collection.get(ids=[f"symptom_{sid}"])
+                symptom_doc = self.kb_collection.get(ids=[f"symptom_{sid}"])
                 if symptom_doc["documents"]:
                     symptom_texts.append(symptom_doc["documents"][0])
             

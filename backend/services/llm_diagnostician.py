@@ -46,10 +46,13 @@ class LLMDiagnosticianService:
         template = """Bạn là một bác sĩ chẩn đoán y khoa thông minh. 
 BẮT BUỘC: Toàn bộ nội dung giải thích và lập luận của bạn PHẢI được viết hoàn toàn bằng TIẾNG VIỆT.
 
-Dựa vào danh sách triệu chứng của bệnh nhân, hãy dự đoán các căn bệnh có thể mắc phải.
+Dựa vào thông tin cơ bản và triệu chứng của bệnh nhân, hãy dự đoán các căn bệnh có thể mắc phải.
 Tiêu chí chẩn đoán (BẮT BUỘC):
-1. TUYỆT ĐỐI KHÔNG thiên vị hoặc thay đổi tỷ lệ bệnh dựa trên giới tính, nghề nghiệp, khu vực sống trừ khi đó là đặc thù sinh học khách quan.
+1. Đánh giá nguy cơ mắc bệnh dựa trên triệu chứng và yếu tố sinh học (giới tính, tuổi tác) nếu có (ví dụ: nam dễ gout, nữ dễ tuyến giáp). TUYỆT ĐỐI KHÔNG thiên vị bừa bãi.
 2. Bạn phải xem xét các thông tin y khoa từ cơ sở dữ liệu (nếu có).
+
+Thông tin bệnh nhân (Giới tính, Tuổi...):
+{patient_info}
 
 Triệu chứng của bệnh nhân:
 {symptoms}
@@ -63,11 +66,11 @@ LƯU Ý CỰC KỲ QUAN TRỌNG: Toàn bộ nội dung chữ (string) bạn đi�
 """
         self.prompt = PromptTemplate(
             template=template,
-            input_variables=["symptoms", "context"],
+            input_variables=["symptoms", "context", "patient_info"],
             partial_variables={"format_instructions": self.parser.get_format_instructions()},
         )
 
-    def diagnose(self, symptoms: List[str], db: Session) -> List[Dict[str, Any]]:
+    def diagnose(self, symptoms: List[str], db: Session, patient_info: str = "Không rõ") -> List[Dict[str, Any]]:
         if not self.llm:
             raise ValueError("Ollama LLM is not enabled.")
             
@@ -83,7 +86,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG: Toàn bộ nội dung chữ (string) bạn đi�
                 context_parts.append(f"- {r['name']}: {r['document']}")
             context = "\n".join(context_parts)
             
-        _input = self.prompt.format_prompt(symptoms=symptoms_str, context=context)
+        _input = self.prompt.format_prompt(symptoms=symptoms_str, context=context, patient_info=patient_info)
         output = self.llm.invoke(_input.to_string())
         
         try:

@@ -89,6 +89,19 @@ def apply_demographic_prior(
         "malaria_diseases": ["Sốt rét"],
     }
 
+    GENDER_PRIORS = {
+        "male_boost": {
+            "genders": ["nam", "male"],
+            "diseases": ["Gút (Gout)", "Nhồi máu cơ tim", "Heart Disease", "Ung thư gan", "Sỏi thận", "Tiểu đường type 2", "Gout"],
+            "factor": 1.10,
+        },
+        "female_boost": {
+            "genders": ["nữ", "female"],
+            "diseases": ["Suy giáp", "Cường giáp", "Thyroid Disorder", "Lupus ban đỏ", "Loãng xương", "Viêm khớp dạng thấp", "Nhiễm trùng đường tiết niệu", "Urinary tract infection"],
+            "factor": 1.10,
+        }
+    }
+
     AGE_PRIORS = {
         "pediatric_boost": {
             "min_age": 0, "max_age": 12,
@@ -117,6 +130,13 @@ def apply_demographic_prior(
             if d["disease_name"] in REGIONAL_PRIORS["malaria_diseases"]:
                 score = min(score * 1.10, 1.0)
                 adj_details.append(f"Vùng {province} → +10% cho {d['disease_name']}")
+                
+        for prior_name, prior in GENDER_PRIORS.items():
+            if gender.strip().lower() in prior["genders"]:
+                if d["disease_name"] in prior["diseases"]:
+                    score = min(score * prior["factor"], 1.0)
+                    gender_str = "Nam" if "male" in prior["genders"] else "Nữ"
+                    adj_details.append(f"Giới tính {gender_str} → +{int((prior['factor']-1)*100)}% cho {d['disease_name']}")
 
         if adj_details:
             adjustments[d["disease_name"]] = adj_details

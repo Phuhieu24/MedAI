@@ -47,6 +47,12 @@ doc.add_paragraph('- Kỹ thuật Lệnh (Prompt Engineering): Đưa cả dữ l
 doc.add_paragraph('- Dự đoán & Giải thích (Generation): LLM tự tin đưa ra chẩn đoán dựa trên kết luận khoa học vững chắc từ đồ thị.')
 doc.add_paragraph('- Đối chiếu SQL (DB Mapping): Tên bệnh do LLM sinh ra được soi chiếu ngược lại vào SQLite để bốc mức độ nghiêm trọng và lời khuyên chuẩn, ngăn chặn bịa đặt.')
 
+doc.add_heading('3.4. Luồng xử lý Bệnh án Lịch sử (Few-Shot Experience Memory)', level=2)
+doc.add_paragraph('Hệ thống đã nạp sẵn 25,000 ca bệnh lịch sử vào Vector Database (ChromaDB) dưới dạng một Collection độc lập (Patient Collection) để lưu trữ an toàn, tách biệt với Knowledge Base.')
+doc.add_paragraph('Thay vì dùng để huấn luyện ML thô vốn dễ bị thiên vị, dữ liệu này đóng vai trò như một "Bộ nhớ kinh nghiệm" (Experience Memory) cho LLM. Khi bệnh nhân mới nhập triệu chứng, hệ thống sẽ trích xuất 3 ca bệnh lịch sử tương đồng nhất để làm ngữ cảnh (Few-Shot Prompting). Nhờ đó:')
+doc.add_paragraph('- Dạy AI cách lập luận lâm sàng từ các ca bệnh thực tế thay vì chỉ lý thuyết sách vở.')
+doc.add_paragraph('- Tăng độ tin cậy cho lời giải thích: AI có căn cứ thực tế để lập luận "Dựa trên dữ liệu lịch sử các ca bệnh tương tự tại phòng khám...".')
+
 doc.add_heading('4. Đáp ứng 5 Tiêu Chí Đánh Giá Của Dự Án', level=1)
 
 doc.add_paragraph('1. Độ tin cậy (Reliability): Khắc phục hoàn toàn bệnh "ảo giác" (Hallucination) nhờ 5 lớp bảo vệ: RAG, GraphRAG (suy luận đồ thị), Pydantic (buộc trả JSON), DB Mapping (đối chiếu SQL) và Input Sanitization (dọn rác đầu vào).')

@@ -49,7 +49,7 @@ def run_diagnosis(req: DiagnosisRequest, db: Session = Depends(get_db)):
     if req.engine == "llm" or getattr(settings, "DIAGNOSIS_ENGINE", "xgboost") == "llm":
         try:
             from services.llm_diagnostician import llm_diagnostician_service
-            llm_results = llm_diagnostician_service.diagnose(req.symptoms, db)
+            llm_results = llm_diagnostician_service.diagnose(req.symptoms, db, patient_info=f"Giới tính: {req.gender}, Tuổi: {req.age}")
             if llm_results:
                 combined = llm_results
         except Exception as e:
