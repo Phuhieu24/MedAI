@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/smoke.test.ts","./src/api/client.ts","./src/components/diseaseresults.tsx","./src/components/llmexplanationpanel.tsx","./src/components/layout.tsx","./src/components/riskalerts.tsx","./src/pages/adminpage.tsx","./src/pages/diagnosispage.tsx","./src/pages/historypage.tsx","./src/types/index.ts"],"version":"5.9.3"}
