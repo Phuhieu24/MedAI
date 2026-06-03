@@ -24,6 +24,27 @@ def text_to_slug(text: str) -> str:
     return text
 
 
+def sanitize_symptoms_input(symptoms: List[str]) -> List[str]:
+    clean_symptoms = []
+    
+    # Danh sách các từ khóa thường dùng để hack LLM
+    forbidden_words = r"(bỏ qua|ignore|forget|system prompt|prompt|lệnh|hướng dẫn|instruction)"
+    
+    for s in symptoms:
+        # 1. Loại bỏ các thẻ đặc biệt của LLM (ví dụ: <|im_start|>, [INST])
+        s_clean = re.sub(r"[<\[].*?[>\]]", "", s)
+        
+        # 2. Xóa các ký tự đặc biệt không thuộc về y tế (chỉ giữ chữ cái, số, dấu phẩy, khoảng trắng, gạch ngang)
+        s_clean = re.sub(r"[^\w\s,.-]", "", s_clean, flags=re.UNICODE)
+        
+        # 3. Kiểm tra nếu chứa từ khóa độc hại thì bỏ qua triệu chứng đó
+        if not re.search(forbidden_words, s_clean, re.IGNORECASE):
+            if s_clean.strip():
+                clean_symptoms.append(s_clean.strip())
+                
+    return clean_symptoms
+
+
 _alias_index_cache = None
 
 

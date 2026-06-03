@@ -24,3 +24,4 @@ chromadb==0.4.24
 lime==0.2.0.1
 httpx==0.26.0
 sentence-transformers>=2.2.2
+slowapi==0.1.9

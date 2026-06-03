@@ -5,6 +5,7 @@ import {
   Scale,
   ShieldCheck,
   TriangleAlert,
+  Stethoscope,
   type LucideIcon,
 } from 'lucide-react'
 import type { LLMExplanation } from '../types'
@@ -71,6 +72,18 @@ export default function LLMExplanationPanel({
       </div>
 
       <p className="text-sm text-gray-700 leading-6">{explanation.summary}</p>
+
+      {explanation.first_aid_and_symptom_analysis && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 my-4">
+          <div className="flex items-center gap-2 font-bold text-indigo-900 mb-2">
+            <Stethoscope className="w-5 h-5" />
+            AI Phân Tích & Sơ Cứu
+          </div>
+          <p className="text-sm text-indigo-800 leading-relaxed">
+            {explanation.first_aid_and_symptom_analysis}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <NoteList title="Độ tin cậy" items={explanation.reasoning} icon={ListChecks} />

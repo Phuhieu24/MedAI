@@ -87,6 +87,7 @@ def _fallback_explanation(
             "Đối chiếu kết quả với khám lâm sàng, sinh hiệu và tiền sử bệnh.",
             "Thu thập thêm triệu chứng còn thiếu trước khi ra quyết định điều trị.",
         ],
+        "first_aid_and_symptom_analysis": "Chưa có phân tích sơ cứu và triệu chứng chi tiết do hệ thống đang chạy ở chế độ dự phòng.",
         "sources": rag_sources,
     }
 
@@ -120,15 +121,16 @@ def _build_prompt(
     }
 
     system = (
-        "Bạn là trợ lý giải thích cho hệ thống AI gợi ý chẩn đoán sức khỏe sơ cấp. "
+        "Bạn là trợ lý y tế. Bạn BẮT BUỘC phải trả lời 100% bằng TIẾNG VIỆT (Vietnamese) cho toàn bộ nội dung. "
         "Chỉ dùng dữ liệu được cung cấp trong RAG sources và top_diseases. "
-        "Không tự tạo chẩn đoán mới, không kê đơn thuốc, không khẳng định chắc chắn. "
-        "Luôn ưu tiên an toàn, công bằng, nhóm yếu thế, khả năng chịu lỗi và minh bạch."
+        "Không tự tạo chẩn đoán mới, không kê đơn thuốc. Luôn ưu tiên an toàn và minh bạch."
     )
     user = (
-        "Hãy tạo giải thích tiếng Việt ở dạng JSON hợp lệ với đúng các khóa: "
-        "summary, reasoning, safety_notes, fairness_notes, limitations, suggested_next_steps. "
-        "Mỗi khóa trừ summary là mảng chuỗi ngắn. Nội dung phải dễ hiểu cho nhân viên y tế tuyến cơ sở. "
+        "TẠO GIẢI THÍCH BẰNG TIẾNG VIỆT (VIETNAMESE) ở dạng JSON hợp lệ với đúng các khóa: "
+        "summary, reasoning, safety_notes, fairness_notes, limitations, suggested_next_steps, first_aid_and_symptom_analysis. "
+        "LƯU Ý QUAN TRỌNG: Dù dữ liệu đầu vào là tiếng Anh, bạn phải dịch và tự viết lại toàn bộ giá trị (value) trong JSON bằng TIẾNG VIỆT.\n"
+        "Với khóa first_aid_and_symptom_analysis (kiểu chuỗi/string): Dưới dạng một đoạn văn ngắn gọn (BẰNG TIẾNG VIỆT), hãy giải thích trực tiếp tại sao các triệu chứng của bệnh nhân lại dẫn đến bệnh này, và đưa ra ngay các bước sơ cứu tại nhà thiết thực, an toàn.\n"
+        "Mỗi khóa khác trừ summary là mảng chuỗi ngắn. Nội dung phải dễ hiểu cho nhân viên y tế tuyến cơ sở. "
         "Dữ liệu:\n"
         f"{json.dumps(payload, ensure_ascii=False)}"
     )
@@ -223,5 +225,6 @@ def generate_llm_explanation(
             llm_json.get("suggested_next_steps"),
             fallback["suggested_next_steps"],
         ),
+        "first_aid_and_symptom_analysis": str(llm_json.get("first_aid_and_symptom_analysis") or fallback["first_aid_and_symptom_analysis"]).strip(),
         "sources": rag_sources,
     }

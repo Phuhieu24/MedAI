@@ -90,6 +90,7 @@ export interface LLMExplanation {
   fairness_notes: string[]
   limitations: string[]
   suggested_next_steps: string[]
+  first_aid_and_symptom_analysis?: string
   sources: RagSource[]
 }
 

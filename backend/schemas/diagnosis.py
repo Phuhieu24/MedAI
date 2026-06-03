@@ -93,6 +93,7 @@ class LLMExplanation(BaseModel):
     fairness_notes: List[str] = []
     limitations: List[str] = []
     suggested_next_steps: List[str] = []
+    first_aid_and_symptom_analysis: Optional[str] = None
     sources: List[RagSource] = []
 
 

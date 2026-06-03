@@ -1,7 +1,8 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from limiter import limiter
 
 from config import settings
 from database import get_db
@@ -22,8 +23,16 @@ from services.vital_signs import analyze_vital_signs
 router = APIRouter(prefix="/api/diagnosis", tags=["Diagnosis"])
 
 
+from services.nlp import extract_symptoms, sanitize_symptoms_input
+
 @router.post("", response_model=DiagnosisResponse)
-def run_diagnosis(req: DiagnosisRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def run_diagnosis(request: Request, req: DiagnosisRequest, db: Session = Depends(get_db)):
+    safe_symptoms = sanitize_symptoms_input(req.symptoms)
+    if not safe_symptoms:
+        raise HTTPException(status_code=400, detail="Triệu chứng không hợp lệ hoặc chứa từ khóa cấm.")
+    req.symptoms = safe_symptoms
+
     patient, _ = get_or_create_patient(req.patient_name, req.date_of_birth, db)
 
     vital_analysis = analyze_vital_signs(req.vital_signs)

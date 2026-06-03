@@ -309,38 +309,7 @@ export default function DiagnosisPage() {
             />
             Áp dụng điều chỉnh nhân khẩu học (công bằng thuật toán)
           </label>
-          <div className="mt-4 border-t pt-4">
-            <label className={labelCls}>Mô hình Chẩn Đoán (AI Engine)</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="engine"
-                  value="xgboost"
-                  checked={form.engine === 'xgboost'}
-                  onChange={(e) => set('engine', e.target.value)}
-                  className="rounded-full"
-                />
-                XGBoost (Nhanh & Ổn định)
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="engine"
-                  value="llm"
-                  checked={form.engine === 'llm'}
-                  onChange={(e) => set('engine', e.target.value)}
-                  className="rounded-full"
-                />
-                LLM (Phân tích sâu bằng ngôn ngữ tự nhiên)
-              </label>
-            </div>
-            {form.engine === 'llm' && (
-              <p className="text-xs text-warning-600 mt-2 bg-warning-50 p-2 rounded">
-                Lưu ý: Chẩn đoán bằng LLM sẽ mất nhiều thời gian hơn (5-15 giây) và nếu thất bại sẽ tự động chuyển về XGBoost.
-              </p>
-            )}
-          </div>
+
         </section>
 
         {error && (
