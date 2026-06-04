@@ -9,6 +9,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.tsx'],
   },
   server: {
+    allowedHosts: true,
     port: 5173,
     proxy: {
       '/api': {
